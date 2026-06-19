@@ -982,6 +982,110 @@
         });
     }
 
+    // Função modificada para salvar o usuário na Planilha do Google Sheets
+function salvarNovoUsuario() {
+    const usernameInput = document.getElementById('newUsername').value.trim();
+    const passwordInput = document.getElementById('newPassword').value.trim();
+    const profilePicInput = document.getElementById('newProfilePicInput');
+
+    if (!usernameInput || !passwordInput) {
+        alert("Por favor, preencha usuário e senha.");
+        return;
+    }
+
+    let usuariosAtuais = JSON.parse(localStorage.getItem('usuarios')) || [];
+    
+    // Verifica se já existe localmente
+    if (usuariosAtuais.some(u => u.username.toLowerCase() === usernameInput.toLowerCase())) {
+        alert("Este usuário já existe!");
+        return;
+    }
+
+    const novoUsuario = {
+        username: usernameInput,
+        password: passwordInput,
+        profilePic: ""
+    };
+
+    const prosseguir = () => {
+        usuariosAtuais.push(novoUsuario);
+        localStorage.setItem('usuarios', JSON.stringify(usuariosAtuais));
+        alert("Conta criada com sucesso!");
+        fecharModalCadastro();
+    };
+
+    // Converter foto de perfil para Base64 se houver
+    if (profilePicInput.files && profilePicInput.files[0]) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            novoUsuario.profilePic = e.target.result;
+            enviarUsuarioParaPlanilha(novoUsuario, prosseguir);
+        };
+        reader.readAsDataURL(profilePicInput.files[0]);
+    } else {
+        enviarUsuarioParaPlanilha(novoUsuario, prosseguir);
+    }
+}
+
+// Envia os dados para a API do Google Sheets
+function enviarUsuarioParaPlanilha(usuario, callback) {
+    if (googleSheetsSyncEnabled && googleSheetsWebAppUrl) {
+        updateSyncStatusVisuals('syncing');
+        
+        fetch(googleSheetsWebAppUrl, {
+            method: 'POST',
+            mode: 'no-cors', // Evita bloqueio de CORS na resposta do Apps Script
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                action: "salvarUsuario",
+                usuario: usuario.username,
+                senha: usuario.password,
+                profilePic: usuario.profilePic
+            })
+        })
+        .then(() => {
+            updateSyncStatusVisuals('success');
+            callback();
+        })
+        .catch(err => {
+            console.error("Erro ao salvar usuário na planilha:", err);
+            updateSyncStatusVisuals('error');
+            // Mesmo com erro na nuvem, salva localmente para não quebrar a usabilidade
+            callback();
+        });
+    } else {
+        callback();
+    }
+}
+
+// Função para buscar e sincronizar a lista de usuários da planilha ao abrir o app
+function carregarUsuariosDaPlanilha() {
+    if (!googleSheetsSyncEnabled || !googleSheetsWebAppUrl) return;
+
+    fetch(`${googleSheetsWebAppUrl}?action=obterUsuarios`)
+        .then(res => res.json())
+        .then(usuariosPlanilha => {
+            if (usuariosPlanilha && usuariosPlanilha.length > 0) {
+                let usuariosLocais = JSON.parse(localStorage.getItem('usuarios')) || [];
+                
+                // Mesclar usuários da planilha com os locais, sem duplicar usernames
+                usuariosPlanilha.forEach(uPlanilha => {
+                    if (!usuariosLocais.some(uLocal => uLocal.username.toLowerCase() === uPlanilha.username.toLowerCase())) {
+                        usuariosLocais.push(uPlanilha);
+                    }
+                });
+                
+                localStorage.setItem('usuarios', JSON.stringify(usuariosLocais));
+            }
+        })
+        .catch(err => console.error("Erro ao buscar usuários da planilha:", err));
+}
+
+// Chamar a função para puxar os usuários da nuvem assim que a página carregar
+window.addEventListener('DOMContentLoaded', () => {
+    carregarUsuariosDaPlanilha();
+});
+
 // EXEMPLO DE USO:
 // Você pode chamar essa função 'carregarDespesasDaPlanilha()' logo após a validação 
 // de login bem-sucedida do usuário dentro do seu script atual.
