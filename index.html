@@ -1,0 +1,2139 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Despesas Familiares</title>
+    <link rel="icon" type="image/png" href="Icone.png">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#2c3e50">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Despesas">
+    <link rel="apple-touch-icon" href="Icone.png">
+    <style>
+        :root {
+            --primary: #4a90e2;
+            --success: #2ecc71;
+            --warning: #f1c40f;
+            --danger: #e74c3c;
+            --dark: #2c3e50;
+            --light: #f4f7f6;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--light);
+            color: var(--dark);
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        h1 { text-align: center; color: var(--dark); }
+
+        /* Estilo dos Cards de Resumo */
+        .summary-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+
+        .card h3 { margin: 0 0 10px 0; font-size: 0.9rem; text-transform: uppercase; color: #666; }
+        .card p { margin: 0; font-size: 1.5rem; font-weight: bold; }
+        .total { border-top: 4px solid var(--primary); }
+        .paid { border-top: 4px solid var(--success); color: var(--success); }
+        .upcoming { border-top: 4px solid var(--warning); color: var(--warning); }
+        .overdue { border-top: 4px solid var(--danger); color: var(--danger); }
+
+        /* Formulário */
+        .form-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: flex-end;
+        }
+
+        .form-group { display: flex; flex-direction: column; flex: 1; min-width: 150px; }
+        .form-group label { margin-bottom: 5px; font-weight: bold; }
+        input, select, button {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background 0.3s;
+            font-weight: bold;
+        }
+
+        button:hover { background-color: #357abd; }
+
+        /* Estilo do contêiner do filtro mensal */
+        .filter-container {
+            background: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+        }
+        .filter-container label {
+            font-weight: bold;
+        }
+        .btn-nav {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 15px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        /* Tabela */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #eee; }
+        th { background-color: var(--dark); color: white; }
+        
+        /* Botões de ação na tabela */
+        .btn-table { background: none; border: none; padding: 5px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.2s; }
+        .btn-table:hover { transform: scale(1.1); background: none; }
+        .btn-edit { color: var(--primary); }
+        .btn-delete { color: var(--danger); }
+
+        .profile-pic-img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+        }
+
+        /* Sistema de Abas */
+        .tabs-nav {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 25px;
+        }
+        .tab-btn {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 6px;
+            background-color: #ddd;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+        .tab-btn.active {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        /* Estilos da Calculadora */
+        .calc-wrapper {
+            display: flex;
+            justify-content: center;
+            padding: 20px 0;
+        }
+        .calc-container {
+            background: #2c3e50;
+            padding: 20px;
+            border-radius: 12px;
+            width: 300px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+        }
+        #calcDisplay {
+            width: 100%;
+            height: 60px;
+            background: #ecf0f1;
+            margin-bottom: 15px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding: 0 15px;
+            font-size: 1.8rem;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            color: #2c3e50;
+            box-sizing: border-box;
+        }
+        .calc-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+        .calc-grid button {
+            padding: 15px;
+            font-size: 1.2rem;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            background: #34495e;
+            color: white;
+            transition: background 0.2s;
+        }
+        .calc-grid button:hover { background: #45627d; }
+        .calc-grid .btn-op { background: var(--primary); }
+        .calc-grid .btn-eq { background: var(--success); grid-column: span 2; }
+        .calc-grid .btn-clear { background: var(--danger); grid-column: span 2; }
+
+        footer {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 20px;
+        }
+
+        .login-screen footer {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.25/jspdf.plugin.autotable.min.js"></script>
+    <style>
+        .chart-container {
+            background: white;
+            padding: 50px 40px 110px 40px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            height: 350px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .btn-export {
+            background-color: #e67e22;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            padding: 8px 15px;
+            cursor: pointer;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            transition: background 0.3s;
+        }
+        .btn-export:hover { background-color: #d35400; }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.6);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 30px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 450px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            position: relative;
+        }
+
+        .close {
+            position: absolute;
+            right: 20px;
+            top: 15px;
+            font-size: 24px;
+            cursor: pointer;
+            color: #888;
+        }
+
+        .modal-content .form-group { margin-bottom: 15px; }
+        .modal-content button { width: 100%; margin-top: 10px; }
+
+        .settings-toggle {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            position: relative;
+        }
+
+        .settings-toggle button {
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            padding: 0;
+        }
+
+        .settings-toggle button svg {
+            width: 20px;
+            height: 20px;
+            stroke-width: 1.5;
+        }
+
+        .top-right-controls {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            z-index: 3000;
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+        }
+
+        .profile-picture-toggle {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            position: relative;
+        }
+
+        .profile-picture-toggle button {
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            padding: 0;
+            overflow: hidden;
+        }
+
+        .settings-panel {
+            display: none;
+            position: absolute;
+            top: 50px;
+            right: 0;
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            font-size: 0.9rem;
+            color: var(--dark);
+        }
+        .settings-panel > div > label { margin-right: 10px; }
+        .settings-panel .divider {
+            border-top: 1px solid #ddd;
+            margin-top: 10px;
+            padding-top: 10px;
+        }
+
+        .sync-indicator-toggle {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            position: relative;
+        }
+        .sync-indicator-toggle button {
+            background: #2ecc71;
+            color: white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            padding: 0;
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .sync-indicator-toggle button:hover {
+            background: #27ae60;
+        }
+        .sync-indicator-toggle button.syncing {
+            background: #3498db;
+        }
+        .sync-indicator-toggle button.syncing:hover {
+            background: #2980b9;
+        }
+        .sync-indicator-toggle button.error {
+            background: #e74c3c;
+        }
+        .sync-indicator-toggle button.error:hover {
+            background: #c0392b;
+        }
+        .sync-indicator-toggle button.disabled {
+            background: #95a5a6;
+        }
+        .sync-indicator-toggle button.disabled:hover {
+            background: #7f8c8d;
+        }
+        .sync-indicator-toggle button svg {
+            width: 20px;
+            height: 20px;
+            stroke-width: 1.5;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .spin {
+            animation: spin 1.5s linear infinite;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .login-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: var(--light);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 4000;
+        }
+
+        .login-card {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .login-card .welcome-text {
+            font-size: 2rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .login-card .login-prompt {
+            font-size: 1rem;
+            color: #666;
+            margin-bottom: 20px;
+        }
+
+        .login-card .form-group {
+            text-align: left;
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        .login-card input[type="text"],
+        .login-card input[type="password"] {
+            width: calc(100% - 22px);
+            padding: 10px;
+            margin-top: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        .login-card button {
+            width: 100%;
+            padding: 12px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+
+        .toggle-password-btn {
+            position: absolute;
+            right: 10px;
+            top: 32px;
+            background: none !important;
+            border: none !important;
+            color: #888 !important;
+            padding: 0 !important;
+            width: auto !important;
+            box-shadow: none !important;
+            cursor: pointer;
+        }
+
+        .language-selection-login {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 5px;
+            color: #666;
+            font-size: 0.9rem;
+            white-space: nowrap; /* Prevent text wrapping */
+        }
+
+        .login-card button:hover {
+            background-color: #357abd;
+        }
+    </style>
+</head>
+<body>
+
+<div class="top-right-controls hidden">
+    <div class="profile-picture-toggle">
+        <button id="profilePictureBtn" title="Foto de Perfil" onclick="abrirModalUploadProfilePic()">
+            <img id="profilePicDisplay" src="" alt="Foto de Perfil" class="profile-pic-img hidden">
+            <svg id="profilePicDefaultIcon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0A8.966 8.966 0 0112 20.25a8.966 8.966 0 01-5.982-2.525M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+        </button>
+    </div>
+
+    <div class="sync-indicator-toggle hidden" id="syncIndicatorContainer">
+        <button id="syncNowBtn" title="Sincronizar com Google Sheets" onclick="carregarDespesasDaPlanilha()">
+            <svg id="syncCloudIcon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17.5 19A3.5 3.5 0 0 0 21 15.5c0-2.79-2.54-4.5-5-4.5-.48 0-.92.07-1.34.2-1.12-2.5-3.66-4.2-6.66-4.2-3.87 0-7 3.13-7 7 0 .38.04.74.1 1.1A4.5 4.5 0 0 0 5.5 19h12z"></path>
+            </svg>
+        </button>
+    </div>
+
+    <div class="settings-toggle">
+        <button id="openSettingsBtn" title="Configurações">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            </svg>
+        </button>
+        <div id="settingsPanel" class="settings-panel">
+            <div style="margin-bottom: 10px; white-space: nowrap;">
+                <label>Tema:</label>
+                <label style="font-weight: normal; cursor: pointer;">
+                    <input type="radio" id="lightModeRadio" name="theme" checked> Claro
+                </label>
+                <label style="font-weight: normal; cursor: pointer; margin-left: 10px;">
+                    <input type="radio" id="darkModeRadio" name="theme"> Noturno
+                </label>
+            </div>
+            <div class="divider" style="display: flex; align-items: center; gap: 10px;">
+                <label>Texto:</label>
+                <button onclick="changeFontSize(-1)" style="padding: 2px 8px; line-height: 1; min-width: 30px;">-</button>
+                <span id="fontSizeDisplay" style="min-width: 45px; text-align: center;">100%</span>
+                <button onclick="changeFontSize(1)" style="padding: 2px 8px; line-height: 1; min-width: 30px;">+</button>
+            </div>
+            <div class="divider" style="margin-top: 10px; padding-top: 10px;">
+                <label data-lang-key="languageLabel">Idioma:</label><br>
+                <label style="font-weight: normal; cursor: pointer;">
+                    <input type="radio" id="langPtRadio" name="language" value="pt" checked> Português 🇧🇷
+                </label><br>
+                <label style="font-weight: normal; cursor: pointer;">
+                    <input type="radio" id="langEnRadio" name="language" value="en"> English 🇺🇸
+                </label><br>
+                <label style="font-weight: normal; cursor: pointer;">
+                    <input type="radio" id="langEsRadio" name="language" value="es"> Español 🇪🇸
+                </label>
+            </div>
+            <div class="divider" style="margin-top: 10px; padding-top: 10px; display: flex; flex-direction: column; gap: 8px;">
+                <label style="font-weight: bold;" data-lang-key="syncLabel">Sincronizar com Google Sheets:</label>
+                <label style="font-weight: normal; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                    <input type="checkbox" id="syncEnabledCheckbox"> <span data-lang-key="syncEnableText">Ativar Sincronização</span>
+                </label>
+                <div id="syncConfigContainer" style="display: none; flex-direction: column; gap: 5px;">
+                    <label style="font-weight: normal; font-size: 0.9rem;" data-lang-key="syncUrlLabel">URL do Web App:</label>
+                    <input type="text" id="syncUrlInput" style="width: 100%; box-sizing: border-box; padding: 6px;" placeholder="https://script.google.com/...">
+                </div>
+            </div>
+            <div class="divider">
+                <button onclick="abrirModalCadastro()" style="background-color: var(--success); width: 100%; padding: 8px; margin-top: 5px; border-radius: 0;" data-lang-key="newUserBtn">Novo Usuário</button>
+            </div>
+            <div class="divider">
+                <button onclick="logout()" style="background-color: var(--danger); width: 100%; padding: 8px; margin-top: 5px; border-radius: 0;" data-lang-key="logoutSettingsBtn">Sair</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="loginScreen" class="login-screen">
+    <div class="login-card">
+        <span class="welcome-text" data-lang-key="loginWelcome">Bem-vindo(a)</span>
+        <span class="login-prompt" data-lang-key="loginPrompt">Faça seu login para começar a fazer as suas despesas</span>
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username" data-lang-key="usernameLabel">Usuário</label>
+                <input type="text" id="username" required>
+            </div>
+            <div class="form-group">
+                <label for="password" data-lang-key="passwordLabel">Senha</label>
+                <input type="password" id="password" required>
+                <button type="button" onclick="togglePasswordVisibility()" class="toggle-password-btn" title="Mostrar/Esconder Senha">
+                    <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                        <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                </button>
+            </div>
+            <button type="submit" id="loginButton" data-lang-key="loginBtn">Entrar</button>
+        </form>
+    </div>
+    <div class="language-selection-login">
+        <span data-lang-key="changeLanguageLogin">Alterar idioma</span>
+        <label style="font-weight: normal; cursor: pointer;">
+            <input type="radio" id="loginLangPtRadio" name="loginLanguage" value="pt" checked> Português 🇧🇷
+        </label>
+        <label style="font-weight: normal; cursor: pointer;">
+            <input type="radio" id="loginLangEnRadio" name="loginLanguage" value="en"> English 🇺🇸
+        </label>
+        <label style="font-weight: normal; cursor: pointer;">
+            <input type="radio" id="loginLangEsRadio" name="loginLanguage" value="es"> Español 🇪🇸
+        </label>
+    </div>
+    <footer data-lang-key="footerText">
+        Todos os direitos reservados a Asaph Summer :)
+    </footer>
+</div>
+
+<div class="container hidden">
+    <h1 data-lang-key="mainHeader">Controle de Despesas Mensais</h1>
+
+    <div class="tabs-nav" id="mainTabs">
+        <button class="tab-btn active" onclick="switchTab('despesas', this)" data-lang-key="tabExpenses">Despesas</button>
+        <button class="tab-btn" onclick="switchTab('calculadora', this)" data-lang-key="tabCalculator">Calculadora</button>
+    </div>
+
+    <div id="tabDespesas">
+    <div class="summary-container">
+        <div class="card total">
+            <h3>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 5px;">
+                    <path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zm0-18a8 8 0 1 0 0 16 8 8 0 0 0 0-16zM13 8h-2v6h2V8zm-1-4a1 1 0 0 1 1 1v1a1 1 0 0 1-2 0V5a1 1 0 0 1 1-1z"/>
+                </svg>
+                Total Período
+            </h3>
+            <p id="totalPeriodo">R$ 0,00</p>
+        </div>
+        <div class="card paid">
+            <h3>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 5px;">
+                    <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25z" clip-rule="evenodd" />
+                </svg>
+                Pagas
+            </h3> 
+            <p id="totalPagas">R$ 0,00</p>
+        </div>
+        <div class="card upcoming">
+            <h3>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 5px;">
+                    <path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM12.75 6a0.75 0.75 0 0 0-1.5 0v6c0 0.414 0.336 0.75 0.75h4.5a0.75 0.75 0 0 0 0-1.5h-3.75V6z" clip-rule="evenodd" />
+                </svg>
+                A Vencer
+            </h3>
+            <p id="totalAVencer">R$ 0,00</p>
+        </div>
+        <div class="card overdue">
+            <h3>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 5px;">
+                    <path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12ZM12 8.25a.75.75 0 0 1 .75.75v3.75a.75.75 0 0 1-1.5 0V9a.75.75 0 0 1 .75-.75Zm0 8.25a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" clip-rule="evenodd" />
+                </svg>
+                Vencidas
+            </h3>
+            <p id="totalVencidas">R$ 0,00</p>
+        </div>
+    </div>
+
+    <div class="chart-container">
+        <h2 data-lang-key="chartTitle">Visualização das suas despesas por status</h2>
+        <canvas id="despesasChart"></canvas>
+    </div>
+
+    <div class="form-container">
+        <div class="form-group">
+            <label data-lang-key="dataLabel">Data</label>
+            <input type="date" id="inputData" required>
+        </div>
+        <div class="form-group">
+            <label data-lang-key="descriptionLabel">Descrição</label>
+            <input type="text" id="inputDescricao" data-lang-placeholder-key="descriptionPlaceholder" placeholder="Ex: Aluguel" oninput="formatarDescricao(this)" required>
+        </div>
+        <div class="form-group">
+            <label data-lang-key="valueLabel">Valor (R$)</label>
+            <input type="number" id="inputValor" step="0.01" data-lang-placeholder-key="valuePlaceholder" placeholder="0,00" required>
+        </div>
+        <div class="form-group">
+            <label data-lang-key="statusLabel">Status</label>
+            <select id="inputStatus">
+                <option value="Pendente" data-lang-key="statusPending">Pendente</option>
+                <option value="Pago" data-lang-key="statusPaid">Pago</option>
+            </select>
+        </div>
+        <button onclick="adicionarDespesa()" data-lang-key="addBtn">Adicionar</button>
+    </div>
+
+    <div class="filter-container">
+        <label data-lang-key="filterLabel">Filtrar por Mês:</label>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <button class="btn-nav" onclick="navegarMes(-1)">❮</button>
+            <span id="labelMesAno" style="min-width: 160px; text-align: center; font-weight: bold; font-size: 1.1rem;">Todos os Meses</span>
+            <button class="btn-nav" onclick="navegarMes(1)">❯</button>
+        </div>
+        <button class="btn-export" onclick="exportarPDF()" title="Exportar PDF">
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="margin-right: 5px;">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            <span data-lang-key="btnExportPDF">PDF</span>
+        </button>
+        <input type="hidden" id="filtroMesAno" value="Todos">
+    </div>
+
+    <table id="tabelaDespesas">
+        <thead>
+            <tr>
+                <th>Data</th>
+                <th>Descrição</th>
+                <th>Valor</th>
+                <th>Status</th>
+                <th>Editar</th>
+                <th>Ação</th>
+            </tr>
+        </thead>
+        <tbody id="listaCorpo">
+            </tbody>
+    </table>
+    </div>
+
+    <div id="tabCalculadora" class="hidden">
+        <div class="calc-wrapper">
+            <div class="calc-container">
+                <div id="calcDisplay">0</div>
+                <div class="calc-grid">
+                    <button class="btn-clear" onclick="calcClear()">C</button>
+                    <button class="btn-op" onclick="calcOp('/')">÷</button>
+                    <button class="btn-op" onclick="calcOp('*')">×</button>
+                    
+                    <button onclick="calcNum('7')">7</button>
+                    <button onclick="calcNum('8')">8</button>
+                    <button onclick="calcNum('9')">9</button>
+                    <button class="btn-op" onclick="calcOp('-')">-</button>
+                    
+                    <button onclick="calcNum('4')">4</button>
+                    <button onclick="calcNum('5')">5</button>
+                    <button onclick="calcNum('6')">6</button>
+                    <button class="btn-op" onclick="calcOp('+')">+</button>
+                    
+                    <button onclick="calcNum('1')">1</button>
+                    <button onclick="calcNum('2')">2</button>
+                    <button onclick="calcNum('3')">3</button>
+                    <button onclick="calcNum('0')">0</button>
+                    
+                    <button onclick="calcNum('.')">.</button>
+                    <button class="btn-eq" onclick="calcCalculate()">=</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="modalEditar" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="fecharModal()">&times;</span>
+        <h2 style="margin-top: 0;" data-lang-key="editExpenseTitle">Editar Despesa</h2>
+        <div class="form-group">
+            <label data-lang-key="dataLabel">Data</label>
+            <input type="date" id="editData" required>
+        </div>
+        <div class="form-group">
+            <label>Descrição</label>
+            <input type="text" id="editDescricao" placeholder="Ex: Aluguel" oninput="formatarDescricao(this)" required>
+        </div>
+        <div class="form-group">
+            <label>Valor (R$)</label>
+            <input type="number" id="editValor" step="0.01" placeholder="0,00" required>
+        </div>
+        <div class="form-group">
+            <label data-lang-key="statusLabel">Status</label>
+            <select id="editStatus">
+                <option value="Pendente" data-lang-key="statusPending">Pendente</option>
+                <option value="Pago" data-lang-key="statusPaid">Pago</option>
+            </select>
+        </div>
+        <button onclick="salvarEdicao()" data-lang-key="saveChangesBtn">Salvar Alterações</button>
+    </div>
+</div>
+
+<div id="modalCadastro" class="modal">
+    <div class="modal-content">
+        <span class="close" onclick="fecharModalCadastro()">&times;</span>
+        <h2 style="margin-top: 0;">Novo Cadastro</h2>
+        <div style="text-align: center; margin-bottom: 15px;">
+            <img id="newProfilePicPreview" src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%234a90e2' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0A8.966 8.966 0 0112 20.25a8.966 8.966 0 01-5.982-2.525M15 9.75a3 3 0 11-6 0 3 3 0 016 0z' /%3E%3C/svg%3E" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary); margin-bottom: 10px;">
+            <div class="form-group">
+                <input type="file" id="newProfilePicInput" accept="image/*" style="width: 100%;">
+            </div>
+        </div>
+        <div class="form-group">
+            <label data-lang-key="usernameLabel">Usuário</label>
+            <input type="text" id="newUsername" required>
+        </div>
+        <div class="form-group">
+            <label data-lang-key="passwordLabel">Senha</label>
+            <input type="password" id="newPassword" required>
+        </div>
+        <button onclick="salvarNovoUsuario()" style="background-color: var(--success); border-radius: 0; width: 100%;" data-lang-key="createAccountBtn">Criar Conta</button>
+    </div>
+</div>
+
+<div id="modalExcluir" class="modal">
+    <div class="modal-content" style="text-align: center;">
+        <span class="close" onclick="fecharModalExcluir()">&times;</span>
+        <h2 style="margin-top: 0; color: var(--danger);" data-lang-key="confirmDeleteTitle">Confirmar Exclusão</h2>
+        <p data-lang-key="confirmDeleteText">Tem certeza que deseja excluir esta despesa? Esta ação não pode ser desfeita.</p>
+        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 25px;">
+            <button onclick="fecharModalExcluir()" style="background-color: #95a5a6; flex: 1;" data-lang-key="cancelBtn">Cancelar</button>
+            <button onclick="confirmarExclusao()" style="background-color: var(--danger); flex: 1;" data-lang-key="deleteBtn">Excluir</button>
+        </div>
+    </div>
+</div>
+
+<div id="modalLogout" class="modal">
+    <div class="modal-content" style="text-align: center;">
+        <span class="close" onclick="fecharModalLogout()">&times;</span>
+        <h2 style="margin-top: 0; color: var(--danger);" data-lang-key="confirmLogoutTitle">Confirmar Saída</h2>
+        <p data-lang-key="confirmLogoutText">Tem certeza que deseja sair da sua conta?</p>
+        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 25px;">
+            <button onclick="fecharModalLogout()" style="background-color: #95a5a6; flex: 1; border-radius: 0;" data-lang-key="cancelBtn">Cancelar</button>
+            <button onclick="confirmarLogout()" style="background-color: var(--danger); flex: 1; border-radius: 0;" data-lang-key="logoutBtn">Sair</button>
+        </div>
+    </div>
+</div>
+
+<div id="modalUploadProfilePic" class="modal">
+    <div class="modal-content" style="text-align: center;">
+        <span class="close" onclick="fecharModalUploadProfilePic()">&times;</span>
+        <h2 data-lang-key="changeProfilePicTitle">Alterar Foto de Perfil</h2>
+        <img id="profilePicPreview" src="" style="width: 150px; height: 150px; border-radius: 50%; object-fit: cover; margin-bottom: 15px; border: 2px solid var(--primary);">
+        <div class="form-group">
+            <input type="file" id="uploadProfilePicInput" accept="image/*">
+        </div>
+        <button onclick="salvarFotoDePerfil()" style="background-color: var(--success); width: 100%;" data-lang-key="savePhotoBtn">Salvar Foto</button>
+    </div>
+</div>
+
+<footer data-lang-key="footerText">
+    Todos os direitos reservados a Asaph Summer :)
+</footer>
+
+<script>
+
+    // --- Configurações do Google Sheets ---
+    let googleSheetsSyncEnabled = localStorage.getItem('googleSheetsSyncEnabled') === 'true';
+    let googleSheetsWebAppUrl = localStorage.getItem('googleSheetsWebAppUrl') || '';
+    let syncStatus = 'idle'; // 'idle' | 'syncing' | 'success' | 'error' | 'disabled'
+
+    function updateSyncStatusVisuals(status) {
+        syncStatus = status;
+        const container = document.getElementById('syncIndicatorContainer');
+        const btn = document.getElementById('syncNowBtn');
+        const icon = document.getElementById('syncCloudIcon');
+        
+        if (!googleSheetsSyncEnabled || !googleSheetsWebAppUrl) {
+            container.classList.add('hidden');
+            return;
+        }
+        
+        container.classList.remove('hidden');
+        btn.className = ''; // Reset classes
+        
+        if (status === 'syncing') {
+            btn.classList.add('syncing');
+            btn.title = languageData[currentLanguage].syncingText || 'Sincronizando...';
+            icon.innerHTML = `<svg class="spin" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>`;
+        } else if (status === 'error') {
+            btn.classList.add('error');
+            btn.title = languageData[currentLanguage].syncError || 'Erro de Sincronização';
+            icon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0zM12 9v4M12 17h.01"/></svg>`;
+        } else {
+            // success / idle
+            btn.title = languageData[currentLanguage].syncSuccess || 'Sincronizado';
+            icon.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19A3.5 3.5 0 0 0 21 15.5c0-2.79-2.54-4.5-5-4.5-.48 0-.92.07-1.34.2-1.12-2.5-3.66-4.2-6.66-4.2-3.87 0-7 3.13-7 7 0 .38.04.74.1 1.1A4.5 4.5 0 0 0 5.5 19h12z"></path></svg>`;
+        }
+    }
+
+    function enviarParaPlanilha(action, data) {
+        if (!googleSheetsSyncEnabled || !googleSheetsWebAppUrl) return Promise.resolve({ status: "disabled" });
+        
+        updateSyncStatusVisuals('syncing');
+        
+        const payload = {
+            action: action,
+            data: data
+        };
+        
+        return fetch(googleSheetsWebAppUrl, {
+            method: "POST",
+            mode: "cors",
+            headers: {
+                "Content-Type": "text/plain;charset=utf-8"
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(response => {
+            if (!response.ok) throw new Error("Erro de rede");
+            return response.json();
+        })
+        .then(result => {
+            if (result.status === "success") {
+                updateSyncStatusVisuals('success');
+                return result;
+            } else {
+                updateSyncStatusVisuals('error');
+                console.error("Erro no Apps Script:", result.message);
+                throw new Error(result.message);
+            }
+        })
+        .catch(err => {
+            updateSyncStatusVisuals('error');
+            console.error("Erro de sincronização:", err);
+            throw err;
+        });
+    }
+
+    function carregarDespesasDaPlanilha() {
+        if (!googleSheetsSyncEnabled || !googleSheetsWebAppUrl || !currentUsername) return;
+        
+        console.log("Carregando despesas do Google Sheets...");
+        updateSyncStatusVisuals('syncing');
+        
+        const url = googleSheetsWebAppUrl + "?usuario=" + encodeURIComponent(currentUsername);
+        
+        fetch(url, {
+            method: "GET",
+            mode: "cors",
+            redirect: "follow"
+        })
+        .then(response => {
+            if (!response.ok) throw new Error('Erro na resposta da rede');
+            return response.json();
+        })
+        .then(result => {
+            if (result.status === "success") {
+                despesas = result.data || [];
+                localStorage.setItem('minhas_despesas', JSON.stringify(despesas));
+                
+                atualizarOpcoesFiltro();
+                renderizarTabela();
+                calcularSumario();
+                
+                updateSyncStatusVisuals('success');
+                console.log("Despesas sincronizadas da planilha: ", despesas.length);
+            } else {
+                updateSyncStatusVisuals('error');
+                console.error("Erro ao ler dados da nuvem: " + result.message);
+            }
+        })
+        .catch(error => {
+            updateSyncStatusVisuals('error');
+            console.error("Erro ao buscar despesas da planilha:", error);
+        });
+    }
+
+// EXEMPLO DE USO:
+// Você pode chamar essa função 'carregarDespesasDaPlanilha()' logo após a validação 
+// de login bem-sucedida do usuário dentro do seu script atual.
+
+    // --- Login Screen Functions ---
+    let currentUsername = null;
+    let imagemCadastroBase64 = null;
+    let currentLanguage = localStorage.getItem('languagePreference') || 'pt'; // Default to Portuguese
+
+    const languageData = {
+        'pt': {
+            'mainHeader': 'Controle de Despesas Mensais',
+            'footerText': 'Todos os direitos reservados a Asaph Summer :)',
+            'appTitle': 'Gestão de Despesas Familiares',
+            'totalPeriodo': 'Total Período',
+            'paid': 'Pagas',
+            'upcoming': 'A Vencer',
+            'overdue': 'Vencidas',
+            'chartTitle': 'Visualização das suas despesas por status',
+            'dataLabel': 'Data',
+            'descriptionLabel': 'Descrição',
+            'descriptionPlaceholder': 'Ex: Aluguel',
+            'valueLabel': 'Valor (R$)',
+            'valuePlaceholder': '0,00',
+            'statusLabel': 'Status',
+            'statusPending': 'Pendente',
+            'statusPaid': 'Pago',
+            'addBtn': 'Adicionar',
+            'filterLabel': 'Filtrar por Mês:',
+            'allMonths': 'Todos os Meses',
+            'tableHeaderDate': 'Data',
+            'tableHeaderDescription': 'Descrição',
+            'tableHeaderValue': 'Valor',
+            'tableHeaderStatus': 'Status',
+            'tableHeaderEdit': 'Editar',
+            'tableHeaderAction': 'Ação',
+            'editExpenseTitle': 'Editar Despesa',
+            'saveChangesBtn': 'Salvar Alterações',
+            'confirmDeleteTitle': 'Confirmar Exclusão',
+            'confirmDeleteText': 'Tem certeza que deseja excluir esta despesa? Esta ação não pode ser desfeita.',
+            'cancelBtn': 'Cancelar',
+            'deleteBtn': 'Excluir',
+            'confirmLogoutTitle': 'Confirmar Saída',
+            'confirmLogoutText': 'Tem certeza que deseja sair da sua conta?',
+            'logoutBtn': 'Sair',
+            'changeProfilePicTitle': 'Alterar Foto de Perfil',
+            'savePhotoBtn': 'Salvar Foto',
+            'loginWelcome': 'Bem-vindo(a)',
+            'loginPrompt': 'Faça seu login para começar a fazer as suas despesas',
+            'usernameLabel': 'Usuário',
+            'passwordLabel': 'Senha',
+            'loginBtn': 'Entrar',
+            'settingsTitle': 'Configurações',
+            'themeLabel': 'Tema:',
+            'lightTheme': 'Claro',
+            'darkTheme': 'Noturno',
+            'textLabel': 'Texto:',
+            'languageLabel': 'Idioma:',
+            'newUserBtn': 'Novo Usuário',
+            'changeLanguageLogin': 'Alterar idioma',
+            'btnExportPDF': 'Exportar PDF',
+            'logoutSettingsBtn': 'Sair',
+            'registerTitle': 'Novo Cadastro',
+            'createAccountBtn': 'Criar Conta',
+            'alertFillAllFields': 'Por favor, preencha todos os campos corretamente.',
+            'alertLoginRequired': 'Você precisa estar logado para alterar a foto de perfil.',
+            'alertUserExists': 'Este usuário já existe!',
+            'alertUserRegistered': 'Usuário cadastrado com sucesso!',
+            'alertInvalidLogin': 'Usuário ou senha incorretos!',
+            'tabExpenses': 'Despesas',
+            'tabCalculator': 'Calculadora',
+            'calculatorError': 'Erro',
+            'syncLabel': 'Sincronizar com Google Sheets:',
+            'syncEnableText': 'Ativar Sincronização',
+            'syncUrlLabel': 'URL do Web App:',
+            'syncSuccess': 'Sincronizado com sucesso!',
+            'syncError': 'Erro ao sincronizar com Google Sheets.',
+            'syncingText': 'Sincronizando...',
+            'monthNames': ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
+        },
+        'en': {
+            'mainHeader': 'Monthly Expense Control',
+            'footerText': 'All rights reserved to Asaph Summer :)',
+            'appTitle': 'Family Expense Management',
+            'totalPeriodo': 'Total Period',
+            'paid': 'Paid',
+            'upcoming': 'Upcoming',
+            'overdue': 'Overdue',
+            'chartTitle': 'Expense Visualization by Status',
+            'dataLabel': 'Date',
+            'descriptionLabel': 'Description',
+            'descriptionPlaceholder': 'Ex: Rent',
+            'valueLabel': 'Value ($)',
+            'valuePlaceholder': '0.00',
+            'statusLabel': 'Status',
+            'statusPending': 'Pending',
+            'statusPaid': 'Paid',
+            'addBtn': 'Add',
+            'filterLabel': 'Filter by Month:',
+            'allMonths': 'All Months',
+            'tableHeaderDate': 'Date',
+            'tableHeaderDescription': 'Description',
+            'tableHeaderValue': 'Value',
+            'tableHeaderStatus': 'Status',
+            'tableHeaderEdit': 'Edit',
+            'tableHeaderAction': 'Action',
+            'editExpenseTitle': 'Edit Expense',
+            'saveChangesBtn': 'Save Changes',
+            'confirmDeleteTitle': 'Confirm Deletion',
+            'confirmDeleteText': 'Are you sure you want to delete this expense? This action cannot be undone.',
+            'cancelBtn': 'Cancel',
+            'deleteBtn': 'Delete',
+            'confirmLogoutTitle': 'Confirm Logout',
+            'confirmLogoutText': 'Are you sure you want to log out of your account?',
+            'logoutBtn': 'Logout',
+            'changeProfilePicTitle': 'Change Profile Picture',
+            'savePhotoBtn': 'Save Photo',
+            'loginWelcome': 'Welcome',
+            'loginPrompt': 'Log in to start managing your expenses',
+            'usernameLabel': 'Username',
+            'passwordLabel': 'Password',
+            'loginBtn': 'Login',
+            'settingsTitle': 'Settings',
+            'themeLabel': 'Theme:',
+            'lightTheme': 'Light',
+            'darkTheme': 'Dark',
+            'textLabel': 'Text:',
+            'languageLabel': 'Language:',
+            'newUserBtn': 'New User',
+            'changeLanguageLogin': 'Change language',
+            'btnExportPDF': 'Export PDF',
+            'logoutSettingsBtn': 'Logout',
+            'registerTitle': 'New Registration',
+            'createAccountBtn': 'Create Account',
+            'alertFillAllFields': 'Please fill in all fields correctly.',
+            'alertLoginRequired': 'You need to be logged in to change your profile picture.',
+            'alertUserExists': 'This user already exists!',
+            'alertUserRegistered': 'User registered successfully!',
+            'alertInvalidLogin': 'Incorrect username or password!',
+            'tabExpenses': 'Expenses',
+            'tabCalculator': 'Calculator',
+            'calculatorError': 'Error',
+            'syncLabel': 'Sync with Google Sheets:',
+            'syncEnableText': 'Enable Synchronization',
+            'syncUrlLabel': 'Web App URL:',
+            'syncSuccess': 'Synced successfully!',
+            'syncError': 'Error syncing with Google Sheets.',
+            'syncingText': 'Syncing...',
+            'monthNames': ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
+        },
+        'es': {
+            'mainHeader': 'Control de Gastos Mensuales',
+            'footerText': 'Todos los derechos reservados a Asaph Summer :)',
+            'appTitle': 'Gestión de Gastos Familiares',
+            'totalPeriodo': 'Total Período',
+            'paid': 'Pagadas',
+            'upcoming': 'Por Vencer',
+            'overdue': 'Vencidas',
+            'chartTitle': 'Visualización de sus gastos por estado',
+            'dataLabel': 'Fecha',
+            'descriptionLabel': 'Descripción',
+            'descriptionPlaceholder': 'Ej: Alquiler',
+            'valueLabel': 'Valor (€)',
+            'valuePlaceholder': '0,00',
+            'statusLabel': 'Estado',
+            'statusPending': 'Pendiente',
+            'statusPaid': 'Pagado',
+            'addBtn': 'Añadir',
+            'filterLabel': 'Filtrar por Mes:',
+            'allMonths': 'Todos los Meses',
+            'tableHeaderDate': 'Fecha',
+            'tableHeaderDescription': 'Descripción',
+            'tableHeaderValue': 'Valor',
+            'tableHeaderStatus': 'Estado',
+            'tableHeaderEdit': 'Editar',
+            'tableHeaderAction': 'Acción',
+            'editExpenseTitle': 'Editar Gasto',
+            'saveChangesBtn': 'Guardar Cambios',
+            'confirmDeleteTitle': 'Confirmar Eliminación',
+            'confirmDeleteText': '¿Está seguro de que desea eliminar este gasto? Esta acción no se puede deshacer.',
+            'cancelBtn': 'Cancelar',
+            'deleteBtn': 'Eliminar',
+            'confirmLogoutTitle': 'Confirmar Salida',
+            'confirmLogoutText': '¿Está seguro de que desea cerrar sesión en su cuenta?',
+            'logoutBtn': 'Salir',
+            'changeProfilePicTitle': 'Cambiar Foto de Perfil',
+            'savePhotoBtn': 'Guardar Foto',
+            'loginWelcome': 'Bienvenido(a)',
+            'loginPrompt': 'Inicie sesión para empezar a gestionar sus gastos',
+            'usernameLabel': 'Usuario',
+            'passwordLabel': 'Contraseña',
+            'loginBtn': 'Iniciar Sesión',
+            'settingsTitle': 'Configuración',
+            'themeLabel': 'Tema:',
+            'lightTheme': 'Claro',
+            'darkTheme': 'Oscuro',
+            'textLabel': 'Texto:',
+            'languageLabel': 'Idioma:',
+            'newUserBtn': 'Nuevo Usuario',
+            'changeLanguageLogin': 'Cambiar idioma',
+            'btnExportPDF': 'Exportar PDF',
+            'logoutSettingsBtn': 'Salir',
+            'registerTitle': 'Nuevo Registro',
+            'createAccountBtn': 'Crear Cuenta',
+            'alertFillAllFields': 'Por favor, complete todos los campos correctamente.',
+            'alertLoginRequired': 'Debe iniciar sesión para cambiar su foto de perfil.',
+            'alertUserExists': '¡Este usuario ya existe!',
+            'alertUserRegistered': '¡Usuario registrado con éxito!',
+            'alertInvalidLogin': '¡Usuario o contraseña incorrectos!',
+            'tabExpenses': 'Gastos',
+            'tabCalculator': 'Calculadora',
+            'calculatorError': 'Error',
+            'syncLabel': 'Sincronizar con Google Sheets:',
+            'syncEnableText': 'Activar Sincronización',
+            'syncUrlLabel': 'URL del Web App:',
+            'syncSuccess': '¡Sincronizado con éxito!',
+            'syncError': 'Error al sincronizar con Google Sheets.',
+            'syncingText': 'Sincronizando...',
+            'monthNames': ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
+        }
+    };
+
+    function showLoginScreen() {
+        document.getElementById('loginScreen').classList.remove('hidden');
+        document.querySelector('.container').classList.add('hidden');
+        document.querySelector('.top-right-controls').classList.add('hidden');
+        document.title = languageData[currentLanguage].appTitle; // Update title on login screen
+    }
+
+    function hideLoginScreen() {
+        document.getElementById('loginScreen').classList.add('hidden');
+        document.querySelector('.container').classList.remove('hidden');
+        document.querySelector('.top-right-controls').classList.remove('hidden');
+        document.getElementById('username').value = '';
+        document.getElementById('password').value = '';
+    }
+
+    function abrirModalCadastro() {
+        document.getElementById('modalCadastro').style.display = 'block';
+        
+        const fileInput = document.getElementById('newProfilePicInput');
+        if (fileInput) {
+            fileInput.addEventListener('change', function(event) {
+                const file = event.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        document.getElementById('newProfilePicPreview').src = e.target.result;
+                        imagemCadastroBase64 = e.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
+    }
+
+    function fecharModalCadastro() {
+        document.getElementById('modalCadastro').style.display = 'none';
+        document.getElementById('newUsername').value = '';
+        document.getElementById('newPassword').value = '';
+        document.getElementById('newProfilePicInput').value = '';
+        document.getElementById('newProfilePicPreview').src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%234a90e2' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0A8.966 8.966 0 0112 20.25a8.966 8.966 0 01-5.982-2.525M15 9.75a3 3 0 11-6 0 3 3 0 016 0z' /%3E%3C/svg%3E";
+        imagemCadastroBase64 = null;
+    }
+
+    function salvarNovoUsuario() {
+        const user = document.getElementById('newUsername').value.trim();
+        const pass = document.getElementById('newPassword').value.trim();
+        if (!user || !pass) {
+            alert(languageData[currentLanguage].alertFillAllFields);
+            return;
+        }
+        let usuarios = JSON.parse(localStorage.getItem('app_usuarios')) || [];
+        if (usuarios.find(u => u.username === user)) {
+            alert(languageData[currentLanguage].alertUserExists);
+            return;
+        }
+        usuarios.push({ 
+            username: user, 
+            password: pass,
+            profilePic: imagemCadastroBase64 
+        });
+        localStorage.setItem('app_usuarios', JSON.stringify(usuarios));
+        alert(languageData[currentLanguage].alertUserRegistered);
+        fecharModalCadastro();
+    }
+
+    function togglePasswordVisibility() {
+        const passwordInput = document.getElementById('password');
+        const eyeIcon = document.getElementById('eyeIcon');
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            eyeIcon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
+        } else {
+            passwordInput.type = 'password';
+            eyeIcon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
+        }
+    }
+
+    // --- Funções para Foto de Perfil ---
+    function abrirModalUploadProfilePic() {
+        if (!currentUsername) {
+            alert(languageData[currentLanguage].alertLoginRequired);
+            return;
+        }
+        document.getElementById('modalUploadProfilePic').style.display = 'block';
+        const profilePicPreview = document.getElementById('profilePicPreview');
+        const profilePicData = localStorage.getItem(`profile_pic_${currentUsername}`);
+        if (profilePicData) {
+            profilePicPreview.src = profilePicData;
+        } else {
+            profilePicPreview.src = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%234a90e2' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0A8.966 8.966 0 0112 20.25a8.966 8.966 0 01-5.982-2.525M15 9.75a3 3 0 11-6 0 3 3 0 016 0z' /%3E%3C/svg%3E";
+        }
+        document.getElementById('uploadProfilePicInput').value = '';
+    }
+
+    function fecharModalUploadProfilePic() {
+        document.getElementById('modalUploadProfilePic').style.display = 'none';
+    }
+
+    document.getElementById('uploadProfilePicInput').addEventListener('change', function(event) {
+        const file = event.target.files[0];
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('profilePicPreview').src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+    });
+
+    function salvarFotoDePerfil() {
+        const previewSrc = document.getElementById('profilePicPreview').src;
+        if (previewSrc && currentUsername) {
+            if (!previewSrc.includes("data:image/svg+xml")) {
+                localStorage.setItem(`profile_pic_${currentUsername}`, previewSrc);
+                
+                // Atualiza o objeto da foto na lista de usuários para consistência
+                let usuarios = JSON.parse(localStorage.getItem('app_usuarios')) || [];
+                const index = usuarios.findIndex(u => u.username === currentUsername);
+                if (index !== -1) {
+                    usuarios[index].profilePic = previewSrc;
+                    localStorage.setItem('app_usuarios', JSON.stringify(usuarios));
+                }
+
+                const display = document.getElementById('profilePicDisplay');
+                const icon = document.getElementById('profilePicDefaultIcon');
+                if (display && icon) {
+                    display.src = previewSrc;
+                    display.classList.remove('hidden');
+                    icon.classList.add('hidden');
+                }
+            }
+            fecharModalUploadProfilePic();
+        }
+    }
+
+    function fecharModalLogout() {
+        document.getElementById('modalLogout').style.display = 'none';
+    }
+
+    function logout() {
+        document.getElementById('modalLogout').style.display = 'block';
+    }
+
+    function confirmarLogout() {
+        showLoginScreen();
+        document.getElementById('settingsPanel').style.display = 'none';
+        document.getElementById('profilePicDisplay').classList.add('hidden');
+        document.getElementById('profilePicDefaultIcon').classList.remove('hidden');
+        currentUsername = null;
+        fecharModalLogout();
+    }
+
+    function formatarDescricao(input) {
+        const start = input.selectionStart;
+        const end = input.selectionEnd;
+        const valor = input.value;
+        
+        const formatado = valor.split(' ').map(palavra => {
+            return palavra.charAt(0).toUpperCase() + palavra.slice(1);
+        }).join(' ');
+
+        input.value = formatado;
+        input.setSelectionRange(start, end);
+    }
+
+    let editingExpenseId = null;
+    let deleteExpenseId = null;
+    let myChart;
+
+    let despesas = JSON.parse(localStorage.getItem('minhas_despesas')) || [];
+    let mesesDisponiveis = ['Todos'];
+    let indiceMesAtual = 0;
+
+    function atualizarOpcoesFiltro() {
+        const valorAtual = document.getElementById('filtroMesAno').value;
+        
+        const mesesSet = new Set();
+        despesas.forEach(d => {
+            if (d.data) {
+                const parts = d.data.split('-');
+                mesesSet.add(`${parts[0]}-${parts[1]}`);
+            }
+        });
+
+        mesesDisponiveis = ['Todos', ...Array.from(mesesSet).sort().reverse()];
+        
+        indiceMesAtual = mesesDisponiveis.indexOf(valorAtual);
+        if (indiceMesAtual === -1) indiceMesAtual = 0;
+        
+        atualizarDisplayFiltro();
+    }
+
+    function atualizarDisplayFiltro() {
+        const valor = mesesDisponiveis[indiceMesAtual];
+        document.getElementById('filtroMesAno').value = valor;
+        const label = document.getElementById('labelMesAno');
+        const translations = languageData[currentLanguage];
+
+        if (valor === 'Todos') {
+            label.innerText = translations.allMonths;
+        } else {
+            const [ano, mes] = valor.split('-');
+            const nomesMeses = translations.monthNames;
+            label.innerText = `${nomesMeses[parseInt(mes) - 1]} / ${ano}`;
+        }
+    }
+
+    function navegarMes(direcao) {
+        indiceMesAtual += direcao;
+        if (indiceMesAtual < 0) indiceMesAtual = mesesDisponiveis.length - 1;
+        if (indiceMesAtual >= mesesDisponiveis.length) indiceMesAtual = 0;
+        
+        atualizarDisplayFiltro();
+        salvarEAtualizar();
+    }
+
+    function adicionarDespesa() {
+        const data = document.getElementById('inputData').value;
+        const descricao = document.getElementById('inputDescricao').value;
+        const valor = parseFloat(document.getElementById('inputValor').value);
+        const status = document.getElementById('inputStatus').value;
+
+        if (!data || !descricao || isNaN(valor) || valor <= 0) {
+            alert(languageData[currentLanguage].alertFillAllFields);
+            return;
+        }
+
+        const novaDespesa = {
+            id: Date.now(),
+            data,
+            descricao,
+            valor,
+            status,
+            usuario: currentUsername
+        };
+
+        despesas.push(novaDespesa);
+        
+        // Define o filtro automaticamente para o mês da despesa recém-adicionada
+        const partesData = data.split('-');
+        const mesAnoAdicionado = `${partesData[0]}-${partesData[1]}`;
+        
+        localStorage.setItem('minhas_despesas', JSON.stringify(despesas));
+        atualizarOpcoesFiltro();
+
+        indiceMesAtual = mesesDisponiveis.indexOf(mesAnoAdicionado);
+        atualizarDisplayFiltro();
+        
+        salvarEAtualizar();
+        limparCampos();
+
+        // Envia para o Google Sheets em segundo plano
+        if (googleSheetsSyncEnabled && googleSheetsWebAppUrl) {
+            enviarParaPlanilha("add", novaDespesa).catch(err => {
+                console.error("Falha ao sincronizar adição:", err);
+            });
+        }
+    }
+
+    // Dark Mode Styles
+    const styleElement = document.createElement('style');
+    styleElement.id = 'darkModeStyles';
+    document.head.appendChild(styleElement);
+
+    function updateDarkModeStyles(isDarkMode) {
+        let styles = '';
+        if (isDarkMode) {
+            styles = `
+                body {
+                    background-color: #333;
+                    color: #eee;
+                    --success: #4ade80;
+                }
+                .card, .form-container, .chart-container, table, .modal-content, .settings-panel, .login-card, .filter-container, .calc-container {
+                    background-color: #444;
+                    color: #eee;
+                }
+                h1, h2, .card h3, .settings-panel label, .filter-container label, footer {
+                    color: #eee;
+                }
+                th {
+                    background-color: #555;
+                    color: #eee;
+                }
+                input, select {
+                    background-color: #555;
+                    color: #eee;
+                    border-color: #666;
+                }
+                input::placeholder {
+                    color: #bbb;
+                }
+                button {
+                    background-color: var(--primary);
+                    color: white;
+                }
+                .btn-table {
+                    color: #eee;
+                }
+                .btn-edit { color: var(--primary); }
+                .btn-delete { color: var(--danger); }
+                .settings-panel {
+                    box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+                }
+                .settings-panel .divider {
+                    border-color: #666;
+                }
+                .login-screen {
+                    background-color: #333;
+                }
+                .login-card .welcome-text,
+                .login-card .login-prompt {
+                    color: #eee;
+                }
+                .login-card input[type="text"],
+                .login-card input[type="password"] {
+                    background-color: #555;
+                    color: #eee;
+                    border-color: #666;
+                }
+                .tab-btn {
+                    background-color: #555;
+                    color: #eee;
+                }
+                .tab-btn.active {
+                    background-color: var(--primary);
+                }
+                .toggle-password-btn {
+                    color: #bbb !important;
+                }
+                .language-selection-login {
+                    color: #bbb;
+                }
+                .login-card input::placeholder {
+                    color: #bbb;
+                }
+            `;
+        }
+        styleElement.innerHTML = styles;
+    }
+
+    const darkModeRadio = document.getElementById('darkModeRadio');
+    const lightModeRadio = document.getElementById('lightModeRadio');
+
+    function fecharModal() {
+        document.getElementById('modalEditar').style.display = 'none';
+        editingExpenseId = null;
+    }
+
+    function editarDespesa(id) {
+        const despesaParaEditar = despesas.find(d => d.id === id);
+        if (despesaParaEditar) {
+            editingExpenseId = id;
+            document.getElementById('editData').value = despesaParaEditar.data;
+            document.getElementById('editDescricao').value = despesaParaEditar.descricao;
+            document.getElementById('editValor').value = despesaParaEditar.valor;
+            document.getElementById('editStatus').value = despesaParaEditar.status;
+            
+            document.getElementById('modalEditar').style.display = 'block';
+        }
+    }
+
+    function salvarEdicao() {
+        const data = document.getElementById('editData').value;
+        const descricao = document.getElementById('editDescricao').value;
+        const valor = parseFloat(document.getElementById('editValor').value);
+        const status = document.getElementById('editStatus').value;
+
+        if (!data || !descricao || isNaN(valor)) {
+            alert(languageData[currentLanguage].alertFillAllFields);
+            return;
+        }
+
+        const index = despesas.findIndex(d => d.id === editingExpenseId);
+        if (index !== -1) {
+            const despesaEditada = { 
+                id: editingExpenseId, 
+                data, 
+                descricao, 
+                valor, 
+                status,
+                usuario: despesas[index].usuario || currentUsername
+            };
+            despesas[index] = despesaEditada;
+            localStorage.setItem('minhas_despesas', JSON.stringify(despesas));
+            atualizarOpcoesFiltro();
+            salvarEAtualizar();
+            fecharModal();
+
+            if (googleSheetsSyncEnabled && googleSheetsWebAppUrl) {
+                enviarParaPlanilha("update", despesaEditada).catch(err => {
+                    console.error("Falha ao sincronizar edição:", err);
+                });
+            }
+        }
+    }
+
+    function fecharModalExcluir() {
+        document.getElementById('modalExcluir').style.display = 'none';
+        deleteExpenseId = null;
+    }
+
+    function removerDespesa(id) {
+        deleteExpenseId = id;
+        document.getElementById('modalExcluir').style.display = 'block';
+    }
+
+    function confirmarExclusao() {
+        if (deleteExpenseId !== null) {
+            const idExcluir = deleteExpenseId;
+            despesas = despesas.filter(d => d.id !== idExcluir);
+            localStorage.setItem('minhas_despesas', JSON.stringify(despesas));
+            atualizarOpcoesFiltro();
+            salvarEAtualizar();
+            fecharModalExcluir();
+
+            if (googleSheetsSyncEnabled && googleSheetsWebAppUrl) {
+                enviarParaPlanilha("delete", { id: idExcluir }).catch(err => {
+                    console.error("Falha ao sincronizar exclusão:", err);
+                });
+            }
+        }
+    }
+
+    function salvarEAtualizar() {
+        renderizarTabela();
+        calcularSumario();
+    }
+
+    function formatarMoeda(valor) {
+        let locale = 'pt-BR';
+        let currency = 'BRL';
+        if (currentLanguage === 'en') {
+            locale = 'en-US';
+            currency = 'USD';
+        } else if (currentLanguage === 'es') {
+            locale = 'es-ES';
+            currency = 'EUR';
+        }
+        return valor.toLocaleString(locale, { style: 'currency', currency: currency });
+    }
+
+    // --- RETORNA APENAS AS DESPESAS QUE CASAM COM O FILTRO SELECIONADO ---
+    function obterDespesasFiltradas() {
+        const filtroVal = document.getElementById('filtroMesAno').value;
+        if (!filtroVal || filtroVal === 'Todos') {
+            return despesas;
+        }
+        return despesas.filter(d => {
+            if (!d.data) return false;
+            return d.data.startsWith(filtroVal);
+        });
+    }
+
+    function calcularSumario() {
+        const hoje = new Date().toISOString().split('T')[0];
+        let total = 0, pagas = 0, aVencer = 0, vencidas = 0;
+
+        const listaFiltrada = obterDespesasFiltradas();
+
+        listaFiltrada.forEach(d => {
+            total += d.valor;
+            if (d.status === 'Pago') {
+                pagas += d.valor;
+            } else {
+                if (d.data < hoje) {
+                    vencidas += d.valor;
+                } else {
+                    aVencer += d.valor;
+                }
+            }
+        });
+
+        document.getElementById('totalPeriodo').innerText = formatarMoeda(total);
+        document.getElementById('totalPagas').innerText = formatarMoeda(pagas);
+        document.getElementById('totalAVencer').innerText = formatarMoeda(aVencer);
+        document.getElementById('totalVencidas').innerText = formatarMoeda(vencidas);
+
+        renderizarGrafico(pagas, aVencer, vencidas);
+    }
+
+    document.getElementById('openSettingsBtn').addEventListener('click', function(event) {
+        const settingsPanel = document.getElementById('settingsPanel');
+        settingsPanel.style.display = settingsPanel.style.display === 'block' ? 'none' : 'block';
+        event.stopPropagation();
+    });
+    
+    document.addEventListener('click', function(event) {
+        const settingsPanel = document.getElementById('settingsPanel');
+        const topRightControls = document.querySelector('.top-right-controls');
+
+        if (settingsPanel.style.display === 'block' && !topRightControls.contains(event.target)) {
+            settingsPanel.style.display = 'none';
+        }
+    });
+
+    function applyTheme(theme) {
+        const isDarkMode = (theme === 'dark');
+        document.body.classList.toggle('dark-mode', isDarkMode);
+        updateDarkModeStyles(isDarkMode);
+        calcularSumario();
+
+        darkModeRadio.checked = isDarkMode;
+        lightModeRadio.checked = !isDarkMode;
+        localStorage.setItem('themePreference', theme);
+    }
+
+    darkModeRadio.addEventListener('change', () => applyTheme('dark'));
+    lightModeRadio.addEventListener('change', () => applyTheme('light'));
+
+    let currentFontSize = parseInt(localStorage.getItem('fontSizePreference')) || 100;
+
+    function applyFontSize(size) {
+        document.documentElement.style.fontSize = size + '%';
+        const display = document.getElementById('fontSizeDisplay');
+        if (display) display.innerText = size + '%';
+        localStorage.setItem('fontSizePreference', size);
+    }
+
+    function changeFontSize(delta) {
+        currentFontSize = Math.max(80, Math.min(140, currentFontSize + (delta * 10)));
+        applyFontSize(currentFontSize);
+    }
+
+    const savedTheme = localStorage.getItem('themePreference');
+    if (savedTheme) {
+        applyTheme(savedTheme);
+    } else {
+        applyTheme('light');
+    }
+
+    applyFontSize(currentFontSize);
+
+    function renderizarGrafico(pagas, aVencer, vencidas) {
+        const ctx = document.getElementById('despesasChart').getContext('2d');
+        const isDark = document.body.classList.contains('dark-mode');
+        const textColor = isDark ? '#eee' : '#666';
+
+        const data = {
+            labels: [languageData[currentLanguage].paid, languageData[currentLanguage].upcoming, languageData[currentLanguage].overdue],
+            datasets: [{
+                label: 'Valor (R$)',
+                data: [pagas, aVencer, vencidas],
+                backgroundColor: [
+                    'rgba(46, 204, 113, 0.8)',
+                    'rgba(241, 196, 15, 0.8)',
+                    'rgba(231, 76, 60, 0.8)'
+                ],
+                borderColor: [
+                    'rgba(46, 204, 113, 1)',
+                    'rgba(241, 196, 15, 1)',
+                    'rgba(231, 76, 60, 1)'
+                ],
+                borderWidth: 1
+            }]
+        };
+
+        const options = {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        color: textColor,
+                        callback: function(value) {
+                            return formatarMoeda(value);
+                        }
+                    }
+                },
+                x: {
+                    ticks: { color: textColor }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            return context.label + ': ' + formatarMoeda(context.parsed.y);
+                        }
+                    }
+                }
+            }
+        };
+
+        if (myChart) {
+            myChart.destroy();
+        }
+        myChart = new Chart(ctx, {
+            type: 'bar',
+            data: data,
+            options: options
+        });
+    }
+
+    function renderizarTabela() {
+        const corpo = document.getElementById('listaCorpo');
+        corpo.innerHTML = '';
+
+        const listaFiltrada = obterDespesasFiltradas();
+        listaFiltrada.sort((a, b) => new Date(a.data) - new Date(b.data));
+
+        listaFiltrada.forEach(d => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td>${d.data.split('-').reverse().join('/')}</td>
+                <td>${d.descricao}</td>
+                <td>${formatarMoeda(d.valor)}</td>
+                <td style="color: ${d.status === 'Pago' ? 'var(--success)' : 'var(--warning)'}">${d.status === 'Pago' ? languageData[currentLanguage].statusPaid : languageData[currentLanguage].statusPending}</td>
+                <td>
+                    <button class="btn-table btn-edit" onclick="editarDespesa(${d.id})" title="Editar">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M21.731 2.269a2.625 2.625 0 0 0-3.712 0l-1.157 1.157 3.712 3.712 1.157-1.157a2.625 2.625 0 0 0 0-3.712ZM19.513 8.199l-3.712-3.712-12.15 12.15a5.25 5.25 0 0 0-1.32 2.214l-.8 2.685a.75.75 0 0 0 .933.933l2.685-.8a5.25 5.25 0 0 0 2.214-1.32L19.513 8.2Z" />
+                        </svg>
+                    </button>
+                </td>
+                <td>
+                    <button class="btn-table btn-delete" onclick="removerDespesa(${d.id})" title="${languageData[currentLanguage].tableHeaderAction}">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path fill-rule="evenodd" d="M16.5 4.478v.227a48.816 48.816 0 0 1 3.878.512.75.75 0 1 1-.256 1.478l-.209-.035-1.005 13.07a3 3 0 0 1-2.991 2.77H8.084a3 3 0 0 1-2.991-2.77L4.087 6.66l-.209.035a.75.75 0 0 1-.256-1.478A48.567 48.567 0 0 1 7.5 4.705v-.227c0-1.564 1.213-2.9 2.816-2.951a52.662 52.662 0 0 1 3.369 0c1.603.051 2.815 1.387 2.815 2.951Zm-6.136-1.452a51.196 51.196 0 0 1 3.273 0C14.39 3.05 15 3.684 15 4.478v.113a49.488 49.488 0 0 0-6 0v-.113c0-.794.609-1.428 1.364-1.452Zm-.355 5.945a.75.75 0 1 0-1.5.058l.347 9a.75.75 0 1 0 1.499-.058l-.346-9Zm5.48.058a.75.75 0 1 0-1.498-.058l-.347 9a.75.75 0 0 0 1.5.058l.345-9Z" clip-rule="evenodd" />
+                        </svg>
+                    </button>
+                </td>
+            `;
+            corpo.appendChild(tr);
+        });
+    }
+
+    function limparCampos() {
+        document.getElementById('inputData').value = '';
+        document.getElementById('inputDescricao').value = '';
+        document.getElementById('inputValor').value = '';
+    }
+
+    // --- Lógica da Calculadora ---
+    let calcValue = '0';
+    let calcPendingExpr = '';
+
+    function updateCalcDisplay() {
+        document.getElementById('calcDisplay').innerText = calcValue;
+    }
+
+    function calcNum(num) {
+        if (calcValue === '0' && num !== '.') {
+            calcValue = num;
+        } else {
+            if (num === '.' && calcValue.includes('.')) return;
+            calcValue += num;
+        }
+        updateCalcDisplay();
+    }
+
+    function calcOp(op) {
+        calcPendingExpr = calcValue + ' ' + op + ' ';
+        calcValue = '0';
+        updateCalcDisplay();
+    }
+
+    function calcCalculate() {
+        try {
+            const result = eval(calcPendingExpr + calcValue);
+            calcValue = String(Number(result.toFixed(8))); // Evita dízimas longas
+            calcPendingExpr = '';
+            updateCalcDisplay();
+        } catch (e) {
+            calcValue = languageData[currentLanguage].calculatorError;
+            updateCalcDisplay();
+            setTimeout(calcClear, 1000);
+        }
+    }
+
+    function calcClear() {
+        calcValue = '0';
+        calcPendingExpr = '';
+        updateCalcDisplay();
+    }
+
+    function exportarPDF() {
+        if (!window.jspdf || !window.jspdf.jsPDF) {
+            alert("Erro: Biblioteca PDF não carregada.");
+            return;
+        }
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        const translations = languageData[currentLanguage];
+        const filtroTexto = document.getElementById('labelMesAno').innerText;
+
+        // Título e Cabeçalho do PDF
+        doc.setFontSize(18);
+        doc.setTextColor(44, 62, 80);
+        doc.text(translations.appTitle, 14, 20);
+        
+        doc.setFontSize(11);
+        doc.setTextColor(100);
+        doc.text(`${translations.filterLabel} ${filtroTexto}`, 14, 30);
+
+        // Dados da Tabela
+        const listaFiltrada = obterDespesasFiltradas();
+        listaFiltrada.sort((a, b) => new Date(a.data) - new Date(b.data));
+
+        const tableRows = listaFiltrada.map(d => [
+            d.data.split('-').reverse().join('/'),
+            d.descricao,
+            formatarMoeda(d.valor),
+            d.status === 'Pago' ? translations.statusPaid : translations.statusPending
+        ]);
+
+        doc.autoTable({
+            head: [[
+                translations.tableHeaderDate,
+                translations.tableHeaderDescription,
+                translations.tableHeaderValue,
+                translations.tableHeaderStatus
+            ]],
+            body: tableRows,
+            startY: 40,
+            theme: 'striped',
+            headStyles: { fillColor: [44, 62, 80] }
+        });
+
+        doc.save(`Despesas_${filtroTexto.replace(/[\s/]/g, '_')}.pdf`);
+    }
+
+    function switchTab(tabName, btn) {
+        document.getElementById('tabDespesas').classList.toggle('hidden', tabName !== 'despesas');
+        document.getElementById('tabCalculadora').classList.toggle('hidden', tabName !== 'calculadora');
+        
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+    }
+    
+    function applyLanguage(lang) {
+        currentLanguage = lang;
+        localStorage.setItem('languagePreference', lang);
+
+        // Sincroniza os botões de rádio (login e configurações)
+        const capitalizedLang = lang.charAt(0).toUpperCase() + lang.slice(1);
+        const settingsRadio = document.getElementById(`lang${capitalizedLang}Radio`);
+        const loginRadio = document.getElementById(`loginLang${capitalizedLang}Radio`);
+        if (settingsRadio) settingsRadio.checked = true;
+        if (loginRadio) loginRadio.checked = true;
+
+        const translations = languageData[lang];
+
+        // Update HTML elements with data-lang-key attribute
+        document.querySelectorAll('[data-lang-key]').forEach(el => {
+            const key = el.getAttribute('data-lang-key');
+            if (translations[key]) {
+                el.innerText = translations[key];
+            }
+        });
+
+        // Update placeholders
+        document.querySelectorAll('[data-lang-placeholder-key]').forEach(el => {
+            const key = el.getAttribute('data-lang-placeholder-key');
+            if (translations[key]) {
+                el.placeholder = translations[key];
+            }
+        });
+
+        // Update specific elements that don't fit data-lang-key easily
+        document.title = translations.appTitle;
+        document.getElementById('totalPeriodo').previousElementSibling.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 5px;"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10zm0-18a8 8 0 1 0 0 16 8 8 0 0 0 0-16zM13 8h-2v6h2V8zm-1-4a1 1 0 0 1 1 1v1a1 1 0 0 1-2 0V5a1 1 0 0 1 1-1z"/></svg>${translations.totalPeriodo}`;
+        document.getElementById('totalPagas').previousElementSibling.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 5px;"><path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm13.36-1.814a.75.75 0 1 0-1.22-.872l-3.236 4.53L9.53 12.22a.75.75 0 0 0-1.06 1.06l2.25 2.25a.75.75 0 0 0 1.14-.094l3.75-5.25z" clip-rule="evenodd" /></svg>${translations.paid}`;
+        document.getElementById('totalAVencer').previousElementSibling.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 5px;"><path fill-rule="evenodd" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM12.75 6a0.75 0.75 0 0 0-1.5 0v6c0 0.414 0.336 0.75 0.75h4.5a0.75 0.75 0 0 0 0-1.5h-3.75V6z" clip-rule="evenodd" /></svg>${translations.upcoming}`;
+        document.getElementById('totalVencidas').previousElementSibling.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="vertical-align: middle; margin-right: 5px;"><path fill-rule="evenodd" d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12ZM12 8.25a.75.75 0 0 1 .75.75v3.75a.75.75 0 0 1-1.5 0V9a.75.75 0 0 1 .75-.75Zm0 8.25a.75.75 0 1 0 0-1.5.75.75 0 0 0 0 1.5Z" clip-rule="evenodd" /></svg>${translations.overdue}`;
+        document.querySelector('.chart-container h2').innerText = translations.chartTitle;
+        
+        document.getElementById('inputStatus').options[0].innerText = translations.statusPending;
+        document.getElementById('inputStatus').options[1].innerText = translations.statusPaid;
+        
+        document.querySelector('#tabelaDespesas thead tr th:nth-child(1)').innerText = translations.tableHeaderDate;
+        document.querySelector('#tabelaDespesas thead tr th:nth-child(2)').innerText = translations.tableHeaderDescription;
+        document.querySelector('#tabelaDespesas thead tr th:nth-child(3)').innerText = translations.tableHeaderValue;
+        document.querySelector('#tabelaDespesas thead tr th:nth-child(4)').innerText = translations.tableHeaderStatus;
+        document.querySelector('#tabelaDespesas thead tr th:nth-child(5)').innerText = translations.tableHeaderEdit;
+        document.querySelector('#tabelaDespesas thead tr th:nth-child(6)').innerText = translations.tableHeaderAction;
+
+        // Modals
+        document.getElementById('editStatus').options[0].innerText = translations.statusPending;
+        document.getElementById('editStatus').options[1].innerText = translations.statusPaid;
+
+        // Update chart labels if chart exists
+        if (myChart) {
+            myChart.data.labels = [translations.paid, translations.upcoming, translations.overdue];
+            myChart.options.plugins.tooltip.callbacks.label = function(context) {
+                return context.label + ': ' + formatarMoeda(context.parsed.y);
+            };
+            myChart.update();
+        }
+
+        // Re-render table to update status text and month names
+        renderizarTabela();
+        atualizarDisplayFiltro(); // To update month names in filter
+        calcularSumario(); // To update currency symbol if needed
+        
+        // Update sync status visuals in the new language
+        if (typeof updateSyncStatusVisuals === 'function') {
+            updateSyncStatusVisuals(syncStatus);
+        }
+    }
+
+    // --- Initial Application Setup ---
+    document.addEventListener('DOMContentLoaded', () => {
+        const savedTheme = localStorage.getItem('themePreference');
+        if (savedTheme) {
+            applyTheme(savedTheme);
+        } else {
+            applyTheme('light');
+        }
+        applyFontSize(currentFontSize);
+
+        // Language setup
+        const savedLanguage = localStorage.getItem('languagePreference');
+        if (savedLanguage) {
+            document.getElementById(`lang${savedLanguage.charAt(0).toUpperCase() + savedLanguage.slice(1)}Radio`).checked = true;
+        } else {
+            document.getElementById('langPtRadio').checked = true;
+        }
+        applyLanguage(savedLanguage || 'pt');
+
+        // Language setup for login screen
+        const loginLangPtRadio = document.getElementById('loginLangPtRadio');
+        const loginLangEnRadio = document.getElementById('loginLangEnRadio');
+        const loginLangEsRadio = document.getElementById('loginLangEsRadio');
+
+        if (savedLanguage === 'pt') {
+            loginLangPtRadio.checked = true;
+        } else if (savedLanguage === 'en') {
+            loginLangEnRadio.checked = true;
+        } else if (savedLanguage === 'es') {
+            loginLangEsRadio.checked = true;
+        } else {
+            loginLangPtRadio.checked = true; // Default to Portuguese
+        }
+        document.getElementById('langPtRadio').addEventListener('change', () => applyLanguage('pt'));
+        document.getElementById('langEnRadio').addEventListener('change', () => applyLanguage('en'));
+        document.getElementById('langEsRadio').addEventListener('change', () => applyLanguage('es'));
+        loginLangPtRadio.addEventListener('change', () => applyLanguage('pt'));
+        loginLangEnRadio.addEventListener('change', () => applyLanguage('en'));
+        loginLangEsRadio.addEventListener('change', () => applyLanguage('es'));
+
+        // Google Sheets setup in settings
+        const syncCheckbox = document.getElementById('syncEnabledCheckbox');
+        const syncUrlInput = document.getElementById('syncUrlInput');
+        const syncConfigContainer = document.getElementById('syncConfigContainer');
+        
+        syncCheckbox.checked = googleSheetsSyncEnabled;
+        syncUrlInput.value = googleSheetsWebAppUrl;
+        syncConfigContainer.style.display = googleSheetsSyncEnabled ? 'flex' : 'none';
+        
+        syncCheckbox.addEventListener('change', (e) => {
+            googleSheetsSyncEnabled = e.target.checked;
+            localStorage.setItem('googleSheetsSyncEnabled', googleSheetsSyncEnabled);
+            syncConfigContainer.style.display = googleSheetsSyncEnabled ? 'flex' : 'none';
+            updateSyncStatusVisuals('idle');
+            if (googleSheetsSyncEnabled && googleSheetsWebAppUrl && currentUsername) {
+                carregarDespesasDaPlanilha();
+            }
+        });
+        
+        syncUrlInput.addEventListener('input', (e) => {
+            googleSheetsWebAppUrl = e.target.value.trim();
+            localStorage.setItem('googleSheetsWebAppUrl', googleSheetsWebAppUrl);
+            updateSyncStatusVisuals('idle');
+        });
+
+        // Initialize sync status button
+        updateSyncStatusVisuals('idle');
+
+        showLoginScreen();
+
+        const loginForm = document.getElementById('loginForm');
+        if (loginForm) {
+            loginForm.addEventListener('submit', function(event) {
+                event.preventDefault();
+                const user = document.getElementById('username').value.trim();
+                const pass = document.getElementById('password').value.trim();
+                let usuarios = JSON.parse(localStorage.getItem('app_usuarios')) || [];
+                const usuarioValido = usuarios.find(u => u.username === user && u.password === pass);
+
+                if (usuarioValido) {
+                    currentUsername = user;
+                    hideLoginScreen();
+                    
+                    atualizarOpcoesFiltro();
+                    
+                    const hoje = new Date();
+                    const mesCorrente = `${hoje.getFullYear()}-${String(hoje.getMonth() + 1).padStart(2, '0')}`;
+                    
+                    const indexMesCorrente = mesesDisponiveis.indexOf(mesCorrente);
+                    if (indexMesCorrente !== -1) {
+                        indiceMesAtual = indexMesCorrente;
+                        atualizarDisplayFiltro();
+                    }
+
+                    carregarDespesasDaPlanilha()
+                    renderizarTabela();
+                    calcularSumario();
+
+                    // Atualiza foto do perfil do topo
+                    const display = document.getElementById('profilePicDisplay');
+                    const icon = document.getElementById('profilePicDefaultIcon');
+                    if (display && icon) {
+                        if (usuarioValido.profilePic) {
+                            display.src = usuarioValido.profilePic;
+                            display.classList.remove('hidden');
+                            icon.classList.add('hidden');
+                        } else {
+                            display.classList.add('hidden');
+                            icon.classList.remove('hidden');
+                        }
+                    }
+                } else {
+                    alert(languageData[currentLanguage].alertInvalidLogin);
+                }
+            });
+        }
+    });
+
+    // Registra o Service Worker para PWA
+    if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+            navigator.serviceWorker.register('./sw.js')
+                .then(reg => console.log('Service Worker registrado com sucesso!', reg))
+                .catch(err => console.error('Erro ao registrar Service Worker:', err));
+        });
+    }
+</script>
+
+</body>
+</html>

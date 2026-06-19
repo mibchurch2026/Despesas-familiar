@@ -1,0 +1,17 @@
+{
+  "name": "Gestão de Despesas Familiares",
+  "short_name": "Despesas",
+  "description": "Controle de despesas mensais e planejamento financeiro familiar.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#2c3e50",
+  "theme_color": "#2c3e50",
+  "icons": [
+    {
+      "src": "Icone.png",
+      "sizes": "255x228",
+      "type": "image/png"
+    }
+  ]
+}
