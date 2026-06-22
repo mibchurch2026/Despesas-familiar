@@ -1,6 +1,8 @@
 const CACHE_NAME = 'despesas-pwa-v1';
 const STATIC_ASSETS = [
   './index.html',
+  './style.css',
+  './app.js',
   './Icone.png',
   './manifest.json',
   'https://cdn.jsdelivr.net/npm/chart.js',
